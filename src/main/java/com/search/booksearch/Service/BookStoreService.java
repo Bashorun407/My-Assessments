@@ -1,16 +1,23 @@
 package com.search.booksearch.Service;
 
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.jpa.impl.JPAQuery;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.search.booksearch.Dao.BookStoreDto;
 import com.search.booksearch.Entity.BookStore;
+import com.search.booksearch.Entity.QBookStore;
 import com.search.booksearch.Exception.ApiException;
 import com.search.booksearch.Reppo.BookStoreReppo;
 import com.search.booksearch.RestResponse.Restponsepojo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.NumberUtils;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import javax.persistence.EntityManager;
 import java.awt.print.Book;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,20 +32,13 @@ public class BookStoreService {
     //Method to Create Book
     public Restponsepojo<BookStore> createBook(BookStoreDto bookStoreDto){
 
-        //To check if empty payload was sent by user
-        if(ObjectUtils.isEmpty(bookStoreDto.getBookNumber()))
-            throw new ApiException("Invalid Book Can Not Be Created!!");
-
         //To check that a book with the same id does not already exist
-        Optional<BookStore> bookStoreOptional = bookStoreReppo.findById(bookStoreDto.getBookNumber());
-
-        if(bookStoreOptional.isPresent())
-        throw new ApiException(String.format("Book with this id %s already exists",
-                bookStoreReppo.findById(bookStoreDto.getBookNumber())));
+        Optional<BookStore> bookStoreOptional = bookStoreReppo.findBookStoreByBookTitle(bookStoreDto.getBookTitle());
+        bookStoreOptional.orElseThrow(() -> new ApiException("Book with this title already exit"));
 
         BookStore book= new BookStore();
         //Getting the contents of the book from the Data transfer object
-        book.setBookNumber(bookStoreDto.getBookNumber());
+        book.setBookNumber(new Date().getTime());
         book.setBookTitle((bookStoreDto.getBookTitle()));
         book.setGenre(bookStoreDto.getGenre());
         book.setAuthor(bookStoreDto.getAuthor());
@@ -54,25 +54,7 @@ public class BookStoreService {
         //Instantiating the response pojo
         Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
         restponsepojo.setData(newBook);
-        restponsepojo.setSuccess(true);
-        restponsepojo.setStatus(201);
-        restponsepojo.setMessage("The New Book has been added to the List.");
-
-        return restponsepojo;
-    }
-
-
-    //Method to display all the books available
-    public Restponsepojo<BookStore> getAllBooks(){
-        List<BookStore> bookStoreList= bookStoreReppo.findAll();
-        if(bookStoreList.isEmpty())
-            throw new ApiException("Books List Empty!");
-
-        Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
-        restponsepojo.setList(bookStoreList);
-        restponsepojo.setSuccess(true);
-        restponsepojo.setStatus(200);
-        restponsepojo.setMessage("Books Successfully displayed!!");
+        restponsepojo.setMessage("Book Successfully Craated");
 
         return restponsepojo;
     }
@@ -83,67 +65,42 @@ public class BookStoreService {
         bookStoreOptional.orElseThrow(() -> new ApiException(String.format("Book with this id %s not found", id)));
 
         Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
-        restponsepojo.setMessage("Book result");
+        restponsepojo.setMessage("Result of Book Search by Id");
         restponsepojo.setData(bookStoreOptional.get());
 
         return restponsepojo;
     }
 
-    //Method to return the last 10 books
-    public List<BookStore> lastTenBooks(){
 
-        return null;
-    }
+    public Restponsepojo<List<BookStore>> searcBookStore(String author, Long bookNumber, String title, String genre){
+        QBookStore qBookStore = QBookStore.bookStore;
+        BooleanBuilder predicate = new BooleanBuilder();
 
+        if (StringUtils.hasText(author))
+            predicate.and(qBookStore.author.likeIgnoreCase("%"+ author + "%"));
 
-    //Method to search a book by Title
-    public Restponsepojo<BookStore> titleSearch(String searchWord) {
+        if (StringUtils.hasText(genre))
+            predicate.and(qBookStore.genre.equalsIgnoreCase(genre));
 
-        Optional<BookStore> bookStoreOptional=bookStoreReppo.findBookStoreByBookTitle(searchWord);
-        bookStoreOptional.orElseThrow(()->new ApiException(String.format("The book with the name %s not found!!",
-                bookStoreReppo.findBookStoreByBookTitle(searchWord))));
+        if (StringUtils.hasText(title))
+            predicate.and(qBookStore.bookTitle.likeIgnoreCase("%" + title + "%"));
 
-        BookStore theBook = bookStoreReppo.findBookStoreByBookTitle(searchWord).get();
+        if (!ObjectUtils.isEmpty(bookNumber))
+            predicate.and(qBookStore.bookNumber.eq(bookNumber));
 
-        //Instantiating the response pojo
-        Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
-        restponsepojo.setData(theBook);
-        restponsepojo.setMessage("Book Found!!");
-        restponsepojo.setSuccess(true);
-        restponsepojo.setStatus(200);
-        return restponsepojo;
-    }
+        JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
+        JPAQuery<BookStore> jpaQuery = jpaQueryFactory.selectFrom(qBookStore)
+                .where(predicate)
+                .orderBy(qBookStore.id.desc());
 
-    //Method to search a book by Title
-    public Restponsepojo<BookStore> authorSearch(String searchWord) {
+        List<BookStore> listOfBooks = jpaQuery.fetch();
 
-        List<BookStore> bookStoreList=bookStoreReppo.findBookStoreByAuthor(searchWord);
-       if( bookStoreList.isEmpty())
-           throw new ApiException(String.format("Book search with the author-name %s not found!!", bookStoreReppo.findBookStoreByAuthor(searchWord)));
-
-       //Instantiating the response pojo
-       Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
-       restponsepojo.setList(bookStoreList);
-       restponsepojo.setSuccess(true);
-       restponsepojo.setStatus(200);
-       restponsepojo.setMessage("Books by author specified found!!");
+        Restponsepojo<List<BookStore>> restponsepojo = new Restponsepojo<>();
+        restponsepojo.setData(listOfBooks);
+        restponsepojo.setMessage("Query result of Book Store");
 
         return restponsepojo;
-    }
 
-    //Method to search a book by Genre
-    public Restponsepojo<BookStore> genreSearch(String searchWord) {
-        List<BookStore> bookStoreList = bookStoreReppo.findBookStoreByGenre(searchWord);
-        if(bookStoreList.isEmpty())
-            throw new ApiException("Book Genre Input Not Found");
-
-        Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
-        restponsepojo.setList(bookStoreList);
-        restponsepojo.setSuccess(true);
-        restponsepojo.setMessage("Book search by genre found!!");
-
-
-        return restponsepojo;
     }
 
     public Restponsepojo<BookStore> adminUpdate(BookStoreDto bookStoreDt){
@@ -152,7 +109,8 @@ public class BookStoreService {
             throw new ApiException("Id is required for update");
 
         Optional<BookStore> bookStoreOptional = bookStoreReppo.findById(bookStoreDt.getId());
-        bookStoreOptional.orElseThrow(() -> new ApiException(String.format("Book with this id %s not found", bookStoreDt.getId() )));
+        bookStoreOptional.orElseThrow(() -> new ApiException(String.format("Book with this id %s not found", bookStoreDt.getId())));
+
 
             BookStore bookUpdate =bookStoreOptional.get();
             bookUpdate.setSummary(bookStoreDt.getSummary());
@@ -183,12 +141,7 @@ public class BookStoreService {
         //Instantiating the response pojo
         Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
         restponsepojo.setData(delBook);
-        restponsepojo.setSuccess(true);
-        restponsepojo.setStatus(201);
         restponsepojo.setMessage("The book specified by id has been deleted!");
-
-
-
         return restponsepojo;
     }
 

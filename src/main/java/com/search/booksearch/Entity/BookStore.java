@@ -6,18 +6,19 @@ import javax.persistence.*;
 import java.math.BigDecimal;
 
 @Data
-@Entity(name = "Book_Store")
+@Entity(name = "BOOK_STORE")
 public class BookStore {
     @Id
-    @Column(name = "ID_Number", unique = true)
+    @Column(name = "Id", unique = true)
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @Column(name = "Book_ID_Number", unique = true)
+    @Column(name = "BOOK_NUMBER")
     private Long bookNumber;
     private String bookTitle;
     private String genre;
     private String author;
+    private Long volume;
     private BigDecimal price;
     private Long noAvailable;
     private String summary;

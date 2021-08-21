@@ -12,6 +12,5 @@ public class Restponsepojo<T> {
     String message;
     Boolean success = true;
     T data;
-    List<T> list;
     int status = 200;
 }

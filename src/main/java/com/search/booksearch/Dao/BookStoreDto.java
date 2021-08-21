@@ -11,6 +11,7 @@ public class BookStoreDto {
     private String bookTitle;
     private String genre;
     private String author;
+    private Long volume;
     private BigDecimal price;
     private Long noAvailable;
     private String summary;

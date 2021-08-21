@@ -23,37 +23,19 @@ public class BookStoreAPI {
         return bookStoreService.createBook(bookStoreDto);
     }
 
-    //API 2 to display all the books available
-    @GetMapping("/allbooks")
-    public Restponsepojo<BookStore> getAllBooks(){
-        return bookStoreService.getAllBooks();
-    }
+    @GetMapping("/search")
+    public Restponsepojo<List<BookStore>> searcBookStore(@RequestParam(name = "author", required = false) String author,
+                                                         @RequestParam(name = "bookNumber", required = false) Long bookNumber,
+                                                         @RequestParam(name = "title", required = false) String title,
+                                                         @RequestParam(name = "genre", required = false) String genre) {
 
-    //API 4 to get a book by Id
+        return bookStoreService.searcBookStore(author, bookNumber, title, genre);
+    }
+        //API 4 to get a book by Id
     @GetMapping("/getbookbyid/{id}")
     public Restponsepojo<BookStore> getBookById(@PathVariable(name = "id") Long id){
         return bookStoreService.getBookById(id);
     }
-
-
-    //API 5(a) to search a book by Title
-    @GetMapping("/titlesearch/{searchWord}")
-    public Restponsepojo<BookStore> titleSearch(@PathVariable String searchWord){
-        return bookStoreService.titleSearch(searchWord);
-    }
-
-    //API 5(b) to search a book by Author
-    @GetMapping("/authorsearch/{searchWord}")
-    public Restponsepojo<BookStore> authorSearch( @PathVariable String searchWord) {
-        return bookStoreService.authorSearch(searchWord);
-    }
-
-    //API 5(c) to search a book by Genre
-    @GetMapping("/genresearch/{searchWord}")
-    public Restponsepojo<BookStore> genreSearch(@PathVariable String searchWord){
-        return bookStoreService.genreSearch(searchWord);
-    }
-
 
     //API 6 to update a book by admin
     @PutMapping ("/adminupdate")
