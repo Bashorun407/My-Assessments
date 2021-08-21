@@ -33,8 +33,17 @@ public class BookStoreService {
     public Restponsepojo<BookStore> createBook(BookStoreDto bookStoreDto){
 
         //To check that a book with the same id does not already exist
-        Optional<BookStore> bookStoreOptional = bookStoreReppo.findBookStoreByBookTitle(bookStoreDto.getBookTitle());
-        bookStoreOptional.orElseThrow(() -> new ApiException("Book with this title already exit"));
+
+        QBookStore qBookStore = QBookStore.bookStore;
+        BooleanBuilder predicate = new BooleanBuilder();
+        predicate.and(qBookStore.bookTitle.equalsIgnoreCase(bookStoreDto.getBookTitle()));
+        predicate.and(qBookStore.volume.eq(bookStoreDto.getVolume()));
+
+        JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
+        long bookCount = jpaQueryFactory.selectFrom(qBookStore).where(predicate).fetchCount();
+
+        if (bookCount > 0)
+            throw new ApiException("A book with this title and volume already exits");
 
         BookStore book= new BookStore();
         //Getting the contents of the book from the Data transfer object
@@ -111,6 +120,16 @@ public class BookStoreService {
         Optional<BookStore> bookStoreOptional = bookStoreReppo.findById(bookStoreDt.getId());
         bookStoreOptional.orElseThrow(() -> new ApiException(String.format("Book with this id %s not found", bookStoreDt.getId())));
 
+        QBookStore qBookStore = QBookStore.bookStore;
+        BooleanBuilder predicate = new BooleanBuilder();
+        predicate.and(qBookStore.bookTitle.equalsIgnoreCase(bookStoreDt.getBookTitle()));
+        predicate.and(qBookStore.volume.eq(bookStoreDt.getVolume()));
+
+        JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
+        long bookCount = jpaQueryFactory.selectFrom(qBookStore).where(predicate).fetchCount();
+
+        if (bookCount > 1)
+            throw new ApiException("A book with this title and volume already exits");
 
             BookStore bookUpdate =bookStoreOptional.get();
             bookUpdate.setSummary(bookStoreDt.getSummary());
@@ -133,14 +152,13 @@ public class BookStoreService {
         bookStoreOptional.orElseThrow(()->new ApiException(String.format("The book with the id %s does not exist",
                 id)));
 
-        BookStore delBook = bookStoreReppo.findById(id).get();
         //This is where the book is deleted
         //Deleting the variable
         bookStoreReppo.deleteById(id);
 
         //Instantiating the response pojo
         Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
-        restponsepojo.setData(delBook);
+        restponsepojo.setData(null);
         restponsepojo.setMessage("The book specified by id has been deleted!");
         return restponsepojo;
     }
