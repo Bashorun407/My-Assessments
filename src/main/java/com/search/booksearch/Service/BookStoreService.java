@@ -10,6 +10,9 @@ import com.search.booksearch.Exception.ApiException;
 import com.search.booksearch.Reppo.BookStoreReppo;
 import com.search.booksearch.RestResponse.Restponsepojo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.NumberUtils;
 import org.springframework.util.ObjectUtils;
@@ -63,7 +66,7 @@ public class BookStoreService {
         //Instantiating the response pojo
         Restponsepojo<BookStore> restponsepojo = new Restponsepojo<>();
         restponsepojo.setData(newBook);
-        restponsepojo.setMessage("Book Successfully Craated");
+        restponsepojo.setMessage("Book Successfully Created");
 
         return restponsepojo;
     }
@@ -81,7 +84,7 @@ public class BookStoreService {
     }
 
 
-    public Restponsepojo<List<BookStore>> searcBookStore(String author, Long bookNumber, String title, String genre){
+    public Restponsepojo<Page<BookStore>> searchBookStore(String author, Long bookNumber, String title, String genre, Pageable pageable){
         QBookStore qBookStore = QBookStore.bookStore;
         BooleanBuilder predicate = new BooleanBuilder();
 
@@ -100,12 +103,14 @@ public class BookStoreService {
         JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
         JPAQuery<BookStore> jpaQuery = jpaQueryFactory.selectFrom(qBookStore)
                 .where(predicate)
-                .orderBy(qBookStore.id.desc());
+                .orderBy(qBookStore.id.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize());
 
-        List<BookStore> listOfBooks = jpaQuery.fetch();
+        Page<BookStore> bookStorePage = new PageImpl<>(jpaQuery.fetch(), pageable, jpaQuery.fetchCount());
 
-        Restponsepojo<List<BookStore>> restponsepojo = new Restponsepojo<>();
-        restponsepojo.setData(listOfBooks);
+        Restponsepojo<Page<BookStore>> restponsepojo = new Restponsepojo<>();
+        restponsepojo.setData(bookStorePage);
         restponsepojo.setMessage("Query result of Book Store");
 
         return restponsepojo;
@@ -129,7 +134,7 @@ public class BookStoreService {
         long bookCount = jpaQueryFactory.selectFrom(qBookStore).where(predicate).fetchCount();
 
         if (bookCount > 1)
-            throw new ApiException("A book with this title and volume already exits");
+            throw new ApiException("A book with this title and volume already exists");
 
             BookStore bookUpdate =bookStoreOptional.get();
             bookUpdate.setSummary(bookStoreDt.getSummary());

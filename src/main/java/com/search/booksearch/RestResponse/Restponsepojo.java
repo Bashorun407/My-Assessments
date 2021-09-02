@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import java.util.List;
 
 @Data
-@ControllerAdvice
 public class Restponsepojo<T> {
 
     String message;

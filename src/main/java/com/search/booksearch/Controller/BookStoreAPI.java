@@ -5,6 +5,8 @@ import com.search.booksearch.Entity.BookStore;
 import com.search.booksearch.RestResponse.Restponsepojo;
 import com.search.booksearch.Service.BookStoreService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,12 +26,13 @@ public class BookStoreAPI {
     }
 
     @GetMapping("/search")
-    public Restponsepojo<List<BookStore>> searcBookStore(@RequestParam(name = "author", required = false) String author,
+    public Restponsepojo<Page<BookStore>> searcBookStore(@RequestParam(name = "author", required = false) String author,
                                                          @RequestParam(name = "bookNumber", required = false) Long bookNumber,
                                                          @RequestParam(name = "title", required = false) String title,
-                                                         @RequestParam(name = "genre", required = false) String genre) {
+                                                         @RequestParam(name = "genre", required = false) String genre,
+                                                         Pageable pageable) {
 
-        return bookStoreService.searcBookStore(author, bookNumber, title, genre);
+        return bookStoreService.searchBookStore(author, bookNumber, title, genre, pageable);
     }
         //API 4 to get a book by Id
     @GetMapping("/getbookbyid/{id}")
