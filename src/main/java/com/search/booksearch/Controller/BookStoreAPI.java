@@ -40,6 +40,16 @@ public class BookStoreAPI {
         return bookStoreService.getBookById(id);
     }
 
+    //Repeating search here to practice
+    @GetMapping("/dynamicSearch")
+    public  Restponsepojo<Page<BookStore>> dynamicSearch(@RequestParam(name = "author", required = false) String author,
+                                                         @RequestParam(name = "title", required = false) String title,
+                                                         @RequestParam(name = "bookNumber", required = false) Long bookNumber,
+                                                         @RequestParam(name = "genre", required = false) String genre,
+                                                         Pageable pageable){
+        return bookStoreService.dynamicSearch(author, title, bookNumber, genre, pageable);
+    }
+
     //API 6 to update a book by admin
     @PutMapping ("/adminupdate")
     public Restponsepojo<BookStore> adminUpdate(@RequestBody BookStoreDto bookStoreDto){

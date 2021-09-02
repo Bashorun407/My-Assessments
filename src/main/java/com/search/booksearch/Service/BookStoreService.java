@@ -117,6 +117,39 @@ public class BookStoreService {
 
     }
 
+    //Repeating search here to practice
+    public  Restponsepojo<Page<BookStore>> dynamicSearch(String author, String title, Long bookNumber, String genre, Pageable pageable){
+
+        QBookStore qBookStore = QBookStore.bookStore;
+        BooleanBuilder predicate = new BooleanBuilder();
+
+        if (StringUtils.hasText(author))
+            predicate.and(qBookStore.author.likeIgnoreCase("%" + author + "%"));
+
+        if ( StringUtils.hasText(title))
+            predicate.and(qBookStore.bookTitle.likeIgnoreCase("%" + title + "%"));
+
+        if (!ObjectUtils.isEmpty(bookNumber))
+            predicate.and(qBookStore.bookNumber.eq(bookNumber));
+
+        if(StringUtils.hasText(genre))
+            predicate.and(qBookStore.genre.equalsIgnoreCase(genre));
+
+        JPAQueryFactory jpaQueryFactory = new JPAQueryFactory(entityManager);
+        JPAQuery<BookStore> jpaQuery = jpaQueryFactory.selectFrom(qBookStore)
+                .where(predicate)
+                .orderBy(qBookStore.id.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize());
+
+        Page<BookStore> bookStorePage = new PageImpl<>(jpaQuery.fetch(), pageable, jpaQuery.fetchCount());
+
+        Restponsepojo<Page<BookStore>> restponsepojo = new Restponsepojo<>();
+        restponsepojo.setData(bookStorePage);
+        restponsepojo.setMessage("Query Result of Book!!");
+        return restponsepojo;
+    }
+
     public Restponsepojo<BookStore> adminUpdate(BookStoreDto bookStoreDt){
 
         if (ObjectUtils.isEmpty(bookStoreDt.getId()))
