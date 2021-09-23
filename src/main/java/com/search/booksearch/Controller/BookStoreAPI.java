@@ -46,8 +46,8 @@ public class BookStoreAPI {
                                                          @RequestParam(name = "title", required = false) String title,
                                                          @RequestParam(name = "bookNumber", required = false) Long bookNumber,
                                                          @RequestParam(name = "genre", required = false) String genre,
-                                                         Pageable pageable){
-        return bookStoreService.dynamicSearch(author, title, bookNumber, genre, pageable);
+                                                         Pageable pageable, Long nLikes){
+        return bookStoreService.dynamicSearch(author, title, bookNumber, genre, pageable, nLikes);
     }
 
     //API 6 to update a book by admin
@@ -56,11 +56,23 @@ public class BookStoreAPI {
        return bookStoreService.adminUpdate(bookStoreDto);
     }
 
+    //API 7a to like a student
+    @PutMapping("/likeStudent/{id}")
+    public Restponsepojo<Long> likeAStudent( @PathVariable Long id){
+        return bookStoreService.likeAStudent(id);
+    }
 
-    //API to 7 delete a book
+    //API 7b to love a student
+    @PutMapping("/loveStudent/{id}")
+    public Restponsepojo<Long> loveAStudent( @PathVariable Long id){
+        return bookStoreService.loveAStudent(id);
+    }
+
+    //API to 8 delete a book
     @DeleteMapping("/delete/{id}")
     public Restponsepojo<BookStore> removeBook(@PathVariable Long id){
        return bookStoreService.removeBook(id);
     }
 
 }
+

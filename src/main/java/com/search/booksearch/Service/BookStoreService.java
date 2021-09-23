@@ -30,6 +30,7 @@ public class BookStoreService {
     private BookStoreReppo bookStoreReppo;
 
     //For QueryDsl
+    @Autowired
     private EntityManager entityManager;
 
     //Method to Create Book
@@ -54,6 +55,7 @@ public class BookStoreService {
         book.setBookTitle((bookStoreDto.getBookTitle()));
         book.setGenre(bookStoreDto.getGenre());
         book.setAuthor(bookStoreDto.getAuthor());
+        book.setVolume(bookStoreDto.getVolume());
         book.setNoAvailable(bookStoreDto.getNoAvailable());
         book.setSummary(bookStoreDto.getSummary());
         book.setPrice(bookStoreDto.getPrice());
@@ -118,7 +120,7 @@ public class BookStoreService {
     }
 
     //Repeating search here to practice
-    public  Restponsepojo<Page<BookStore>> dynamicSearch(String author, String title, Long bookNumber, String genre, Pageable pageable){
+    public  Restponsepojo<Page<BookStore>> dynamicSearch(String author, String title, Long bookNumber, String genre, Pageable pageable, Long nlikes){
 
         QBookStore qBookStore = QBookStore.bookStore;
         BooleanBuilder predicate = new BooleanBuilder();
@@ -141,6 +143,15 @@ public class BookStoreService {
                 .orderBy(qBookStore.id.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize());
+
+        //***Attempt to implement likes*** I dont know if this will work but I just said to write it
+        if(!ObjectUtils.isEmpty(nlikes)) {
+             Long countLikes = jpaQuery.fetchFirst()
+                     .getLikes();
+             countLikes +=1;
+             jpaQuery.fetchFirst().setLikes(countLikes);
+        }
+
 
         Page<BookStore> bookStorePage = new PageImpl<>(jpaQuery.fetch(), pageable, jpaQuery.fetchCount());
 
@@ -183,6 +194,43 @@ public class BookStoreService {
         return restponsepojo;
     }
 
+    public Restponsepojo<Long> likeAStudent(Long id){
+        if(ObjectUtils.isEmpty(id))
+            throw new ApiException("The Id is null...input Id");
+
+        Optional<BookStore> bookStoreOptional = bookStoreReppo.findById(id);
+        bookStoreOptional.orElseThrow(()-> new ApiException("Book with this id %s not found!"));
+
+        BookStore bookStore = bookStoreOptional.get();
+        Long likes = bookStore.getLikes() + 1;
+        bookStore.setLikes(likes);
+        bookStoreReppo.save(bookStore);
+
+        Restponsepojo<Long> restponsepojo = new Restponsepojo<>();
+        restponsepojo.setData(likes);
+        restponsepojo.setMessage("likes added!!");
+
+        return restponsepojo;
+    }
+
+    public Restponsepojo<Long> loveAStudent(Long id){
+        if(ObjectUtils.isEmpty(id))
+            throw new ApiException("The Id is null...input Id");
+
+        Optional<BookStore> bookStoreOptional = bookStoreReppo.findById(id);
+        bookStoreOptional.orElseThrow(()-> new ApiException(String.format("Book with this id %s not found!!", id)));
+
+        BookStore bookStore = bookStoreOptional.get();
+        Long love = bookStore.getLove() + 1;
+        bookStore.setLove(love);
+        bookStoreReppo.save(bookStore);
+
+        Restponsepojo<Long> restponsepojo = new Restponsepojo<>();
+        restponsepojo.setData(love);
+        restponsepojo.setMessage("loves added!!");
+
+        return restponsepojo;
+    }
 
     //Method to delete a book
     public Restponsepojo<BookStore> removeBook(Long id){
